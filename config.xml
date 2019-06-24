@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+	<name>fixboproductname</name>
+	<displayName><![CDATA[fix BackOffice Product Name]]></displayName>
+	<version><![CDATA[1.0.0]]></version>
+	<description><![CDATA[fix BackOffice product name for Disabled languages]]></description>
+	<author><![CDATA[Saeed Sattar Beglou]]></author>
+	<tab><![CDATA[administration]]></tab>
+	<is_configurable>0</is_configurable>
+	<need_instance>1</need_instance>
+</module>
