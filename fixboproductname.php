@@ -47,8 +47,8 @@ class Fixboproductname extends Module
 
         parent::__construct();
 
-        $this->displayName = $this->l('fix BackOffice Product Name');
-        $this->description = $this->l('fix BackOffice product name for Disabled languages');
+        $this->displayName = $this->l('Fixed BackOffice product name');
+        $this->description = $this->l('Fixed BackOffice product name for disabled languages');
 
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
@@ -71,14 +71,15 @@ class Fixboproductname extends Module
         if (empty($params['id_product'])) {
             return;
         }
-        $this->fixProductName($params['id_product']);
-    }
 
-    public function fixProductName($id_product)
-    {
         $id_shop = $this->context->shop->id;
         $id_default_lang = Configuration::get('PS_LANG_DEFAULT', null, null, $id_shop);
-        $disabled_lang_id = $this->getDisabledLangs();
+        $this->fixProductName($params['id_product'], $id_default_lang, $id_shop);
+    }
+
+    public function fixProductName($id_product, $id_default_lang, $id_shop)
+    {
+        $disabled_lang_id = $this->getDisabledLangs($id_shop);
 
         $sql = "UPDATE `" . _DB_PREFIX_ . "product_lang` a
                 INNER JOIN (SELECT b.name, b.id_lang FROM `" . _DB_PREFIX_ . "product_lang` b WHERE b.id_lang = ". $id_default_lang ." AND b.id_product = ". $id_product ." AND id_shop = " . $id_shop . ") t ON
@@ -88,9 +89,9 @@ class Fixboproductname extends Module
         return Db::getInstance()->Execute($sql);
     }
 
-    public function getDisabledLangs()
+    public function getDisabledLangs($id_shop)
     {
-        $id_langs = Language::getLanguages(false, $this->context->shop->id);
+        $id_langs = Language::getLanguages(false, $id_shop);
 
         $disabledLangs = array();
         foreach ($id_langs as $id_lang) {
@@ -104,9 +105,12 @@ class Fixboproductname extends Module
 
     public function fixAllProductName()
     {
-        $products = Product::getProducts($this->context->language->id, 1, 0, 'name', 'ASC', false, true);
+        $id_shop = $this->context->shop->id;
+        $id_default_lang = Configuration::get('PS_LANG_DEFAULT', null, null, $id_shop);
+
+        $products = Product::getProducts($id_default_lang, 1, 0, 'name', 'ASC', false, false);
         foreach ($products as $key) {
-            $this->fixProductName($key['id_product']);
+            $this->fixProductName($key['id_product'], $id_default_lang ,$id_shop);
         }
     }
 }
