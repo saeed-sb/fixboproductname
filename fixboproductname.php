@@ -80,8 +80,8 @@ class Fixboproductname extends Module
         $id_default_lang = Configuration::get('PS_LANG_DEFAULT', null, null, $id_shop);
         $disabled_lang_id = $this->getDisabledLangs();
 
-        $sql = "UPDATE `" . _DB_PREFIX_ . "_product_lang` a
-                INNER JOIN (SELECT b.name, b.id_lang FROM `" . _DB_PREFIX_ . "_product_lang` b WHERE b.id_lang = ". $id_default_lang ." AND b.id_product = ". $id_product ." AND id_shop = " . $id_shop . ") t ON
+        $sql = "UPDATE `" . _DB_PREFIX_ . "product_lang` a
+                INNER JOIN (SELECT b.name, b.id_lang FROM `" . _DB_PREFIX_ . "product_lang` b WHERE b.id_lang = ". $id_default_lang ." AND b.id_product = ". $id_product ." AND id_shop = " . $id_shop . ") t ON
                 a.id_product = " . $id_product . " AND a.id_lang IN ('". $disabled_lang_id ."') AND id_shop = " . $id_shop . "
                 SET a.name=t.name";
 
