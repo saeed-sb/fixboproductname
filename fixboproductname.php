@@ -110,7 +110,7 @@ class Fixboproductname extends Module
 
         $products = Product::getProducts($id_default_lang, 1, 0, 'name', 'ASC', false, false);
         foreach ($products as $key) {
-            $this->fixProductName($key['id_product'], $id_default_lang ,$id_shop);
+            $this->fixProductName($key['id_product'], $id_default_lang, $id_shop);
         }
     }
 }
