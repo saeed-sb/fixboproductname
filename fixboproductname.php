@@ -36,7 +36,7 @@ class Fixboproductname extends Module
     {
         $this->name = 'fixboproductname';
         $this->tab = 'administration';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'Saeed Sattar Beglou';
         $this->need_instance = 0;
 
@@ -55,10 +55,17 @@ class Fixboproductname extends Module
 
     public function install()
     {
-        $this->fixAllProductName();
+        if (!parent::install() || !$this->registerHook('actionProductUpdate')) {
+            return false;
+        }
 
-        return parent::install() &&
-            $this->registerHook('actionProductUpdate');
+        if (!$this->fixAllProductName()) {
+            $this->uninstall();
+
+            return false;
+        }
+
+        return true;
     }
 
     public function uninstall()
@@ -72,45 +79,63 @@ class Fixboproductname extends Module
             return;
         }
 
-        $id_shop = $this->context->shop->id;
-        $id_default_lang = Configuration::get('PS_LANG_DEFAULT', null, null, $id_shop);
-        $this->fixProductName($params['id_product'], $id_default_lang, $id_shop);
+        $id_shop = (int) $this->context->shop->id;
+        $id_default_lang = (int) Configuration::get('PS_LANG_DEFAULT', null, null, $id_shop);
+        $this->fixProductName((int) $params['id_product'], $id_default_lang, $id_shop);
     }
 
     public function fixProductName($id_product, $id_default_lang, $id_shop)
     {
-        $disabled_lang_id = $this->getDisabledLangs($id_shop);
+        $id_product = (int) $id_product;
+        $id_default_lang = (int) $id_default_lang;
+        $id_shop = (int) $id_shop;
+        $disabled_lang_ids = $this->getDisabledLangs($id_shop);
 
-        $sql = "UPDATE `" . _DB_PREFIX_ . "product_lang` a
-                INNER JOIN (SELECT b.name, b.id_lang FROM `" . _DB_PREFIX_ . "product_lang` b WHERE b.id_lang = ". $id_default_lang ." AND b.id_product = ". $id_product ." AND id_shop = " . $id_shop . ") t ON
-                a.id_product = " . $id_product . " AND a.id_lang IN ('". $disabled_lang_id ."') AND id_shop = " . $id_shop . "
-                SET a.name=t.name";
+        if (empty($disabled_lang_ids)) {
+            return true;
+        }
 
-        return Db::getInstance()->Execute($sql);
+        $sql = 'UPDATE `' . _DB_PREFIX_ . 'product_lang` a
+                INNER JOIN (
+                    SELECT b.name
+                    FROM `' . _DB_PREFIX_ . 'product_lang` b
+                    WHERE b.id_lang = ' . $id_default_lang . '
+                        AND b.id_product = ' . $id_product . '
+                        AND b.id_shop = ' . $id_shop . '
+                ) t ON a.id_product = ' . $id_product . '
+                    AND a.id_lang IN (' . implode(',', $disabled_lang_ids) . ')
+                    AND a.id_shop = ' . $id_shop . '
+                SET a.name = t.name';
+
+        return Db::getInstance()->execute($sql);
     }
 
     public function getDisabledLangs($id_shop)
     {
-        $id_langs = Language::getLanguages(false, $id_shop);
+        $id_langs = Language::getLanguages(false, (int) $id_shop);
 
         $disabledLangs = array();
         foreach ($id_langs as $id_lang) {
-            if ($id_lang['active'] == 0) {
-                array_push($disabledLangs, $id_lang['id_lang']);
+            if ((int) $id_lang['active'] === 0) {
+                $disabledLangs[] = (int) $id_lang['id_lang'];
             }
         }
 
-        return implode("','", $disabledLangs);
+        return $disabledLangs;
     }
 
     public function fixAllProductName()
     {
-        $id_shop = $this->context->shop->id;
-        $id_default_lang = Configuration::get('PS_LANG_DEFAULT', null, null, $id_shop);
+        $id_shop = (int) $this->context->shop->id;
+        $id_default_lang = (int) Configuration::get('PS_LANG_DEFAULT', null, null, $id_shop);
 
         $products = Product::getProducts($id_default_lang, 1, 0, 'name', 'ASC', false, false);
         foreach ($products as $key) {
-            $this->fixProductName($key['id_product'], $id_default_lang, $id_shop);
+            if (!$this->fixProductName((int) $key['id_product'], $id_default_lang, $id_shop)) {
+                return false;
+            }
         }
+
+        return true;
     }
 }
