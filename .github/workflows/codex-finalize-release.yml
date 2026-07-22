@@ -1,0 +1,31 @@
+name: Finalize v1.0.1
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/codex-finalize-release.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify release and point tag to clean commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: v1.0.1
+          CLEAN_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" >/dev/null
+          gh api \
+            --method PATCH \
+            "repos/$GH_REPO/git/refs/tags/$RELEASE_TAG" \
+            -f sha="$CLEAN_SHA" \
+            -F force=true
